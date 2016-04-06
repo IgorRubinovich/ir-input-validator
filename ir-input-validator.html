@@ -1,0 +1,84 @@
+<dom-module is="ir-input-validator">
+	<template>
+		<span id="invalid" hidden="{{isValid}}">
+			<content>Invalid</content>
+		</span>
+	</template>
+</dom-module>
+
+<style>
+	ir-input-validator, :host{
+		float: right;
+	}
+	#invalid{
+		color: red;
+	}
+</style>
+
+<script>
+if(!window.ir) window.ir = {};
+
+Polymer({
+	is : "ir-input-validator",
+	attached : function() {
+		var that = this, sources, attributes, events, watchers, pattern;
+
+		if(!this.source)
+		{				
+			sources = document.querySelectorAll('[name="' + this.target + '"]');
+			sources = Array.prototype.filter.call(sources, function(el) { return el != that });
+			console.log(sources);
+			if(sources.length > 1)
+				throw new Error('ir-input-validator: source id not found or occures more than once.');
+		}
+		else
+			sources = this.source.split(",").map(function(id) {
+				return document.getElementById(id);
+			});
+		pattern = this.pattern,
+		attributes = this.valueAttr.split(","),
+		events = this.changeEvent.split(","),
+		watchers = [];
+
+		sources.forEach(function(el, i) {
+			var w = 
+			watchers[i] = {
+				source : el,
+				valueAttr : attributes[i] || attributes[0] || 'value',
+				changeEvent : events[i] || events[0] || 'change'
+			};
+
+			w.source.addEventListener(w.changeEvent, that.validate.bind(that));
+
+		});
+
+		this.watchers = watchers[0];
+
+	},
+
+	validate: function(){
+		var watcher = this.watchers;
+		var val = this.get(watcher.valueAttr, watcher.source);
+		var re = new RegExp(this.pattern, 'g');
+		var test = val.match(re);
+		this.set("isValid", test);
+	},
+
+	properties : {
+		value : { 
+			type : String,
+			observer : "_validate",
+			notify : true
+		},
+
+		name : { type : String },
+		type : { type : String, value : "hidden" },
+		source : { type : String },
+		valueAttr : { type : String, value : "value" },
+		changeEvent : { type : String, value : "change" },
+		pattern:{type:String},
+		target:{type:String},
+		isValid:{type:Boolean, value: true}
+	}	
+});
+</script>
