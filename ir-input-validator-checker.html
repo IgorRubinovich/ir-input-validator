@@ -1,0 +1,77 @@
+<dom-module is="ir-input-validator-checker">
+	<template>
+
+		<span id="invalidForm" hidden="{{isv}}">
+			<content>Invalid Form</content>
+		</span>
+
+	</template>
+</dom-module>
+
+<style>
+	ir-input-validator-checker, :host{
+		float: right;
+	}
+	#invalidForm{
+		color: red;
+	}
+
+</style>
+
+<script>
+if(!window.ir) window.ir = {};
+
+Polymer({
+	is : "ir-input-validator-checker",
+	attached : function() {
+
+		var that = this, validators, form;
+
+		function findUpTag(el, tag) {
+			while (el.parentNode) {
+				el = el.parentNode;
+				if (el.tagName === tag)
+					return el;
+			}
+			return null;
+		}
+
+		form = findUpTag(this, "FORM");
+		if(form) {
+			validators = form.querySelectorAll('ir-input-validator');
+			validators = Array.prototype.filter.call(validators, function(el) { return el != that });
+			this.validators = validators;
+		}
+
+		var observer = new MutationObserver(function(mutations) {
+			mutations.forEach(function(mutation) {
+				that.checker();
+			});
+		});
+
+		var config = { attributes: true, childList: true, characterData: true };
+
+		validators.forEach(function(el, i) {
+			observer.observe(el.childNodes[1], config);
+		})
+	},
+
+	checker:function(){
+		var valid = true;
+		var v = this.validators;
+
+		v.forEach(function(el, i) {
+			if(!el.isValid) valid = false;
+		});
+		if(!valid){this.set("isv", false);}
+		else{this.set("isv", true);}
+	},
+
+
+	properties : {
+		isValid:{type:Boolean, value: true},
+		validators:{type:Object},
+		isv:{type:Boolean, value: true}
+	}
+});
+</script>
