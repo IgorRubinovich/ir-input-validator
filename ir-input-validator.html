@@ -28,7 +28,8 @@ Polymer({
 			sources = document.querySelectorAll('[name="' + this.target + '"]');
 			sources = Array.prototype.filter.call(sources, function(el) { return el != that });
 			if(sources.length > 1)
-				throw new Error('ir-input-validator: source id not found or occures more than once.');
+				sources = [sources[0]];
+				//throw new Error('ir-input-validator: source id not found or occures more than once.');
 		}
 		else
 			sources = this.source.split(",").map(function(id) {
@@ -61,8 +62,8 @@ Polymer({
 		var watcher = this.watchers;
 		var val = this.get(watcher.valueAttr, watcher.source);
 		var re = new RegExp(this.pattern, 'g');
-		var test = val.match(re);
-		this.set("isValid", test);
+		var test = val.toString().match(re);
+		this.set("isValid", !!test);
 		this.fire("check-form", test);
 	},
 
