@@ -21,13 +21,18 @@ if(!window.ir) window.ir = {};
 Polymer({
 	is : "ir-input-validator",
 	attached : function() {
-		var that = this, sources, attributes, events, watchers, pattern, isRe;
+		var that = this, sources, attributes, events, watchers, pattern, isRe, form;
 
-
+		form = this;
+		while(form.tagName != 'FORM')
+			form = form.parentNode;
+			
+		if(!form)
+			return console.warn("ir-input-validator couldn't find an ancestor form and will do nothing:", this);
 
 		if(!this.source)
 		{
-			sources = document.querySelectorAll('[name="' + this.target + '"]');
+			sources = form.querySelectorAll('[name="' + this.target + '"]');
 			sources = Array.prototype.filter.call(sources, function(el) { return el != that });
 			if(sources.length > 1)
 				sources = [sources[0]];
@@ -35,7 +40,7 @@ Polymer({
 		}
 		else
 			sources = this.source.split(",").map(function(id) {
-				return document.getElementById(id);
+				return form.querySelectorAll("#" + id);
 			});
 
 		attributes = this.valueAttr.split(","),
@@ -56,31 +61,34 @@ Polymer({
 
 		this.watchers = watchers[0];
 
-
+		this.validate();
 
 	},
 
 	validate: function(){
-		var watcher = this.watchers;
+		var watcher = this.watchers, res, re;
 
 		if(this.pattern == 'mail'){
 			this.pattern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
 		}
+
         if(this.pattern == 'web'){
             this.pattern = "/([-a-zA-Z0-9^\p{L}\p{C}\u00a1-\uffff@:%_\+.~#?&//=]{2,256}){1}(\.[a-z]{2,4}){1}(\:[0-9]*)?(\/[-a-zA-Z0-9\u00a1-\uffff\(\)@:%,_\+.~#?&//=]*)?([-a-zA-Z0-9\(\)@:%,_\+.~#?&//=]*)?";
         }
 
 		var val = this.get(watcher.valueAttr, watcher.source);
 
-		if(this.isRequired == false && val.length == 0){
-            this.set("isValid", true);
-            this.fire("check-form", true);
+		if(this.isRequired == false && val.length == 0)
+		{
+			this.set("isValid", true);
+			this.fire("check-form", true);
         }
-		else {
-            var re = new RegExp(this.pattern, 'ig');
-            var test = val.toString().match(re);
-            this.set("isValid", !!test);
-            this.fire("check-form", test);
+		else 
+		{
+			re = new RegExp(this.pattern, 'ig');
+			res = val.toString().match(re);
+			this.set("isValid", !!res);
+			this.fire("check-form", res);
 		}
 
 

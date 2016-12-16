@@ -1,8 +1,8 @@
 <dom-module is="ir-input-validator-checker">
 	<template>
 
-		<span id="invalidForm" hidden="{{isv}}">
-			<content>Invalid Form</content>
+		<span id="invalidForm" hidden="{{ isValid }}">
+			<content></content>
 		</span>
 
 	</template>
@@ -27,53 +27,31 @@ Polymer({
 
 		var that = this, validators, form;
 
-		function findUpTag(el, tag) {
-			while (el.parentNode) {
-				el = el.parentNode;
-				if (el.tagName === tag)
-					return el;
-			}
-			return null;
-		}
+		form = this;
+		while(form.tagName != 'FORM')
+			form = form.parentNode;
 
-		form = findUpTag(this, "FORM");
-		if(form) {
-			validators = form.querySelectorAll('ir-input-validator');
-			validators = Array.prototype.filter.call(validators, function(el) { return el != that });
-			this.validators = validators;
-		}
+		if(!form)
+			return console.warn("ir-input-validator-checker couldn't find an ancestor form and will do nothing: ", this);
 
-		var observer = new MutationObserver(function(mutations) {
-			mutations.forEach(function(mutation) {
-				that.checker();
-			});
-		});
-
-		var config = { attributes: true, childList: true, characterData: true };
-
-		validators.forEach(function(el, i) {
-			observer.observe(el.childNodes[1], config);
-		});
-
-
+		validators = [].slice.call(form.querySelectorAll('ir-input-validator'));
+		this.set("validators", validators);
+		
+		form.addEventListener('check-form', this.digestValidators.bind(this));
+		
+		//validators.forEach(function(v) { ); }.bind(this));
 	},
-
-	checker:function(){
-		var valid = true;
-		var v = this.validators;
-
-		v.forEach(function(el, i) {
-			if(!el.isValid) valid = false;
-		});
-		if(!valid){this.set("isv", false);}
-		else{this.set("isv", true);}
+	
+	digestValidators : function() {
+		var digest = this.validators.reduce(function(r, v) { return r + (v.isValid ? 0 : 1) }, 0);
+		this.set('isValid', !digest);
+		this.set('errorsCount', digest);
 	},
-
 
 	properties : {
-		isValid:{type:Boolean, value: true},
-		validators:{type:Object},
-		isv:{type:Boolean, value: true}
+		isValid : { type : Boolean, value : true},
+		validators : { type : Object },
+		errorsCount : { type:Number, value : 0}
 	}
 });
 </script>
