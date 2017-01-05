@@ -60,9 +60,15 @@ Polymer({
 		});
 
 		this.watchers = watchers[0];
-
-		this.validate();
-
+		
+		if(!this.watchers)
+		{
+			if(console.error)
+				console.error('this is the offensive reflector:', this)
+			throw new Error('ir-native-input-reflector: source id not found or occures more than once.');
+		}
+		
+		// this.validate();
 	},
 
 	validate: function(){
