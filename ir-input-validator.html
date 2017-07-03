@@ -16,106 +16,137 @@
 </style>
 
 <script>
-if(!window.ir) window.ir = {};
-
-Polymer({
-	is : "ir-input-validator",
-	attached : function() {
-		var that = this, sources, attributes, events, watchers, pattern, isRe, form;
-
-		form = this;
-		while(form.tagName != 'FORM')
-			form = form.parentNode;
-			
-		if(!form)
-			return console.warn("ir-input-validator couldn't find an ancestor form and will do nothing:", this);
-
-		if(!this.source)
-		{
-			sources = form.querySelectorAll('[name="' + this.target + '"]');
-			sources = Array.prototype.filter.call(sources, function(el) { return el != that });
-			if(sources.length > 1)
-				sources = [sources[0]];
-				//throw new Error('ir-input-validator: source id not found or occures more than once.');
-		}
-		else
-			sources = this.source.split(",").map(function(id) {
-				return form.querySelectorAll("#" + id);
-			});
-
-		attributes = this.valueAttr.split(","),
-		events = this.changeEvent.split(","),
-		watchers = [];
-
-		sources.forEach(function(el, i) {
-			var w =
-			watchers[i] = {
-				source : el,
-				valueAttr : attributes[i] || attributes[0] || 'value',
-				changeEvent : events[i] || events[0] || 'change'
-			};
-
-			w.source.addEventListener(w.changeEvent, that.validate.bind(that));
-
-		});
-
-		this.watchers = watchers[0];
+(function() {
+	var knownPatterns = {
 		
-		if(!this.watchers)
-		{
-			if(console.error)
-				console.error('this is the offensive reflector:', this)
-			throw new Error('ir-native-input-reflector: source id not found or occures more than once.');
-		}
+		mail : "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?",
 		
-		// this.validate();
-	},
-
-	validate: function(){
-		var watcher = this.watchers, res, re;
-
-		if(this.pattern == 'mail'){
-			this.pattern = "[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?";
-		}
-
-        if(this.pattern == 'web'){
-            this.pattern = "/([-a-zA-Z0-9^\p{L}\p{C}\u00a1-\uffff@:%_\+.~#?&//=]{2,256}){1}(\.[a-z]{2,4}){1}(\:[0-9]*)?(\/[-a-zA-Z0-9\u00a1-\uffff\(\)@:%,_\+.~#?&//=]*)?([-a-zA-Z0-9\(\)@:%,_\+.~#?&//=]*)?";
-        }
-
-		var val = this.get(watcher.valueAttr, watcher.source);
-
-		if(this.isRequired == false && val.length == 0)
-		{
-			this.set("isValid", true);
-			this.fire("check-form", true);
-        }
-		else 
-		{
-			re = new RegExp(this.pattern, 'ig');
-			res = val.toString().match(re);
-			this.set("isValid", !!res);
-			this.fire("check-form", res);
-		}
-
-
-	},
-
-	properties : {
-		value : {
-			type : String,
-			observer : "_validate",
-			notify : true
-		},
-        isRequired:{type:Boolean, value: false},
-		name : { type : String },
-		type : { type : String, value : "hidden" },
-		source : { type : String },
-		valueAttr : { type : String, value : "value" },
-		changeEvent : { type : String, value : "change" },
-		pattern:{type:String},
-		target:{type:String},
-		isValid:{type:Boolean, value: true}
-
+		web : "/([-a-zA-Z0-9^\p{L}\p{C}\u00a1-\uffff@:%_\+.~#?&//=]{2,256}){1}(\.[a-z]{2,4}){1}(\:[0-9]*)?(\/[-a-zA-Z0-9\u00a1-\uffff\(\)@:%,_\+.~#?&//=]*)?([-a-zA-Z0-9\(\)@:%,_\+.~#?&//=]*)?",
+		
+		"integer-positive" : function(v) { return Number(v) > 0 } 
+	
 	}
-});
+
+
+	Polymer({
+		is : "ir-input-validator",
+		attached : function() {
+			var sources, attributes, events, watchers, pattern, isRe, form;
+
+			form = this;
+			while(form.tagName != 'FORM')
+				form = form.parentNode;
+				
+			if(!form)
+				return console.warn("ir-input-validator couldn't find an ancestor form and will do nothing:", this);
+
+			if(!this.source)
+			{
+				sources = form.querySelectorAll('[name="' + this.target + '"]');
+				sources = Array.prototype.filter.call(sources, function(el) { return el != this });
+				//if(sources.length > 1)
+				//	sources = [sources[0]];
+					//throw new Error('ir-input-validator: source id not found or occures more than once.');
+			}
+			else
+				sources = this.source.split(",").map(function(id) {
+					return form.querySelector("#" + id);
+				});
+
+			attributes = this.valueAttr.split(","),
+			events = this.changeEvent.split(","),
+			watchers = [];
+
+			this.allValidators = [];
+			
+			sources.forEach(function(el, i) {
+				var validator, w =
+				watchers[i] = {
+					source : el,
+					valueAttr : attributes[i] || attributes[0] || 'value',
+					changeEvent : events[i] || events[0] || 'change'
+				};
+
+				w.source.addEventListener(w.changeEvent, validator = this.validate.bind(this, sources));
+
+				this.allValidators.push(validator);
+			}.bind(this));
+
+			this.watchers = watchers[0];
+			
+			if(!this.watchers)
+			{
+				if(console.error)
+					console.error('this is the offensive reflector:', this)
+				throw new Error('ir-native-input-reflector: source id not found or occures more than once: ', this.watchers);
+			}
+			
+			this.sources = sources;
+			
+			// this.validate();
+		},
+		
+		forceValidate : function() {
+			this.allValidators.forEach(v => v(true));
+			return this.isValid;
+		},
+		
+		validate: function(sources, dontFireEvent){
+			var watcher = this.watchers, res, re, p;
+
+			if(!sources.filter(function(e) { return !e.disabled }).length) // if all elements are disabled there's a reason and we regard the element as valid
+			{
+				this.set("isValid", true);
+				return true;
+			}
+			
+			if(knownPatterns[this.pattern])
+				this.pattern = knownPatterns[this.pattern];
+
+			var val = this.get(watcher.valueAttr, watcher.source);
+			
+			if(typeof val == 'undefined')
+				val = '';
+			
+			if(this.pattern) 
+			{
+				if(typeof this.pattern == "string")
+				{
+					re = new RegExp(this.pattern, 'ig');
+					res = val.toString().match(re);
+				}
+				else
+				if(typeof this.pattern == "function")
+					res = this.pattern(val)
+			}
+			else
+			if(this.required)
+				res = val.toString().length;
+			
+			this.set("isValid", !!res);
+			!dontFireEvent && this.fire("check-form", true);
+			sources.forEach(function(e) { e[this.isValid ? "removeAttribute" : "setAttribute"]('invalid', true) });
+		
+			return this.isValid;
+		},
+
+		properties : {
+			value : {
+				type : String,
+				observer : "_validate",
+				notify : true
+			},
+			required:{type:Boolean, value: false},
+			name : { type : String },
+			type : { type : String, value : "hidden" },
+			source : { type : String },
+			valueAttr : { type : String, value : "value" },
+			changeEvent : { type : String, value : "change" },
+			pattern:{type:String},
+			target:{type:String},
+			isValid:{type:Boolean, value: true}
+
+		}
+	});
+})()
 </script>

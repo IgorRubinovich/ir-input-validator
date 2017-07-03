@@ -1,7 +1,7 @@
 <dom-module is="ir-input-validator-checker">
 	<template>
 
-		<span id="invalidForm" hidden="{{ isValid }}">
+		<span id="invalidForm" hidden="{{ !showContent }}">
 			<content></content>
 		</span>
 
@@ -9,11 +9,9 @@
 </dom-module>
 
 <style>
-	ir-input-validator-checker, :host{
-		float: right;
-	}
 	#invalidForm{
-		color: red;
+		color: darkred;
+		margin-top : 12px;
 	}
 
 </style>
@@ -43,15 +41,25 @@ Polymer({
 	},
 	
 	digestValidators : function() {
-		var digest = this.validators.reduce(function(r, v) { return r + (v.isValid ? 0 : 1) }, 0);
+		var digest = this.validators.reduce(function(r, v) { return r + (v.forceValidate(true) ? 0 : 1) }, 0);
 		this.set('isValid', !digest);
 		this.set('errorsCount', digest);
 	},
+	
+	validate : function() {
+		this.digestValidators();
+		return this.isValid;
+	},
+	
+	_showContent : function() {
+		return !this.isValid;
+	},
 
 	properties : {
-		isValid : { type : Boolean, value : true},
+		isValid : { type : Boolean, value : true },
 		validators : { type : Object },
-		errorsCount : { type:Number, value : 0}
+		errorsCount : { type:Number, value : 0},
+		showContent : { type: Boolean, computed : "_showContent(isValid)" }
 	}
 });
 </script>
