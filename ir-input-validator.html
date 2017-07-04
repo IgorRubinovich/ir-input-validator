@@ -44,7 +44,7 @@
 			{
 				sources = form.querySelectorAll('[name="' + this.target + '"]');
 				sources = Array.prototype.filter.call(sources, function(el) { return el != this });
-				//if(sources.length > 1)
+				//if(sources.length > 1)   
 				//	sources = [sources[0]];
 					//throw new Error('ir-input-validator: source id not found or occures more than once.');
 			}
@@ -87,7 +87,7 @@
 		},
 		
 		forceValidate : function() {
-			this.allValidators.forEach(v => v(true));
+			this.allValidators.forEach(function(v) { return v(true) });
 			return this.isValid;
 		},
 		
