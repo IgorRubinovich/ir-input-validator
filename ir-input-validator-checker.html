@@ -32,7 +32,7 @@ Polymer({
 		if(!form)
 			return console.warn("ir-input-validator-checker couldn't find an ancestor form and will do nothing: ", this);
 
-		validators = [].slice.call(form.querySelectorAll('ir-input-validator'));
+		validators = [].slice.call(Polymer.dom(form).querySelectorAll('ir-input-validator'));
 		this.set("validators", validators);
 		
 		form.addEventListener('check-form', this.digestValidators.bind(this));
@@ -41,7 +41,9 @@ Polymer({
 	},
 	
 	digestValidators : function() {
-		var digest = this.validators.reduce(function(r, v) { return r + (v.forceValidate(true) ? 0 : 1) }, 0);
+		var digest = this.validators.reduce(function(r, v) { 
+			return r + (v.forceValidate(true) ? 0 : 1) 
+		}, 0);
 		this.set('isValid', !digest);
 		this.set('errorsCount', digest);
 	},
