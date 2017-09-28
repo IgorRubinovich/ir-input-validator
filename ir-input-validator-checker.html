@@ -49,7 +49,11 @@ Polymer({
 	},
 	
 	validate : function() {
-		this.digestValidators();
+		if(this.customValidator)
+			this.set("isValid", this[this.customValidator]())
+		else
+			this.digestValidators();
+		
 		return this.isValid;
 	},
 	
@@ -61,7 +65,8 @@ Polymer({
 		isValid : { type : Boolean, value : true },
 		validators : { type : Object },
 		errorsCount : { type:Number, value : 0},
-		showContent : { type: Boolean, computed : "_showContent(isValid)" }
+		showContent : { type: Boolean, computed : "_showContent(isValid)" },
+		customValidator : { type : String, vlaue : "" }
 	}
 });
 </script>
