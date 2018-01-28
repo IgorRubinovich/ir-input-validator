@@ -41,9 +41,10 @@ Polymer({
 	},
 	
 	digestValidators : function() {
-		var digest = this.validators.reduce(function(r, v) { 
-			return r + (v.forceValidate(true) ? 0 : 1) 
-		}, 0);
+		var digest = this.disabled ? 0 :
+			this.validators.reduce(function(r, v) { 
+				return r + (v.forceValidate(true) ? 0 : 1) 
+			}, 0);
 		this.set('isValid', !digest);
 		this.set('errorsCount', digest);
 	},
@@ -66,7 +67,8 @@ Polymer({
 		validators : { type : Object },
 		errorsCount : { type:Number, value : 0},
 		showContent : { type: Boolean, computed : "_showContent(isValid)" },
-		customValidator : { type : String, vlaue : "" }
+		customValidator : { type : String, value : "" },
+		disabled : { type : Boolean }
 	}
 });
 </script>
