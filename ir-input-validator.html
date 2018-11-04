@@ -123,7 +123,10 @@
 			if(this.required)
 				res = val.toString().length;
 			
+			//this.set("isValid", (typeof res == 'undefined') || !!res);
+			
 			this.set("isValid", (typeof res == 'undefined') || !!res);
+			
 			!dontFireEvent && this.fire("check-form", true);
 			sources.forEach(function(e) { e[this.isValid ? "removeAttribute" : "setAttribute"]('invalid', true) }.bind(this));
 		
@@ -145,7 +148,6 @@
 			pattern:{type:String},
 			target:{type:String},
 			isValid:{type:Boolean, value: true, notify: true}
-
 		}
 	});
 })()

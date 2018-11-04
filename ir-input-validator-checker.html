@@ -51,7 +51,7 @@ Polymer({
 	
 	validate : function() {
 		if(this.customValidator)
-			this.set("isValid", this[this.customValidator]())
+			this.set("isValid", Polymer.dom(this).getOwnerRoot().host[this.customValidator]()) // expecting custom validator on host element
 		else
 			this.digestValidators();
 		
