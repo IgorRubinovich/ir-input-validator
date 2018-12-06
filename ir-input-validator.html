@@ -93,6 +93,9 @@
 		
 		validate: function(sources, dontFireEvent){
 			var watcher = this.watchers, res, re, p;
+			var e = dontFireEvent;
+			if(e instanceof Event)
+				dontFireEvent = false;
 
 			if(!sources.filter(function(e) { return !e.disabled }).length) // if all elements are disabled there's a reason and we regard the element as valid
 			{
@@ -136,10 +139,10 @@
 		properties : {
 			value : {
 				type : String,
-				observer : "_validate",
+				//observer : "_validate",
 				notify : true
 			},
-			required:{type:Boolean, value: false},
+			required:{ type : Boolean, value: false},
 			name : { type : String },
 			type : { type : String, value : "hidden" },
 			source : { type : String },
@@ -148,6 +151,7 @@
 			pattern:{type:String},
 			target:{type:String},
 			isValid:{type:Boolean, value: true, notify: true}
+			//isValid:{type:Boolean, value: true, notify: true}
 		}
 	});
 })()

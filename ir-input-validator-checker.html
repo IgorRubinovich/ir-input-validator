@@ -37,6 +37,10 @@ Polymer({
 		
 		form.addEventListener('check-form', this.digestValidators.bind(this));
 		
+		this._isAttached = true;
+		
+		if(this._validateWhenAttached)
+			this.validate();
 		//validators.forEach(function(v) { ); }.bind(this));
 	},
 	
@@ -50,8 +54,11 @@ Polymer({
 	},
 	
 	validate : function() {
+		if(!this._isAttached) // if validate was called too early we want to validate asap, i.e. when attached
+			return this._validateWhenAttached = true;
+
 		if(this.customValidator)
-			this.set("isValid", Polymer.dom(this).getOwnerRoot().host[this.customValidator]()) // expecting custom validator on host element
+			this.set("isValid", !!Polymer.dom(this).getOwnerRoot().host[this.customValidator]()) // expecting custom validator on host element
 		else
 			this.digestValidators();
 		
@@ -63,7 +70,7 @@ Polymer({
 	},
 
 	properties : {
-		isValid : { type : Boolean, value : true },
+		isValid : { type : Boolean, value : true, notify : true },
 		validators : { type : Object },
 		errorsCount : { type:Number, value : 0},
 		showContent : { type: Boolean, computed : "_showContent(isValid)" },
