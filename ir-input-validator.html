@@ -1,6 +1,6 @@
 <dom-module is="ir-input-validator">
 	<template>
-		<span id="invalid" hidden="{{isValid}}">
+		<span id="invalid" hidden="{{!_showInvalidMessage}}">
 			<content>Invalid</content>
 		</span>
 	</template>
@@ -26,7 +26,7 @@
 		"integer-positive" : function(v) { return Number(v) > 0 } 
 	
 	}
-
+	const INTERACTION_EVENT_TYPES = ['click','tap','keydown'];
 
 	Polymer({
 		is : "ir-input-validator",
@@ -34,15 +34,17 @@
 			var sources, attributes, events, watchers, pattern, isRe, form;
 
 			form = this;
-			while(form.tagName != 'FORM')
+			var ownerRoot = Polymer.dom(this).getOwnerRoot();
+			while((form.parentNode && form.parentNode.nodeType == Node.ELEMENT_NODE) && (ownerRoot == Polymer.dom(form	).getOwnerRoot()) && form.tagName != 'FORM')
 				form = form.parentNode;
-				
+			
 			if(!form)
 				return console.warn("ir-input-validator couldn't find an ancestor form and will do nothing:", this);
 
+			const queryRoot = form.root == ownerRoot ? Polymer.dom(form.root) : Polymer.dom(form);
 			if(!this.source)
 			{
-				sources = Polymer.dom(form).querySelectorAll('[name="' + this.target + '"]');
+				sources = queryRoot.querySelectorAll('[name="' + this.target + '"]');
 				sources = Array.prototype.filter.call(sources, function(el) { return el != this });
 				//if(sources.length > 1)   
 				//	sources = [sources[0]];
@@ -50,7 +52,7 @@
 			}
 			else
 				sources = this.source.split(",").map(function(id) {
-					return Polymer.dom(form).querySelector("#" + id);
+					return queryRoot.querySelector("#" + id);
 				});
 
 			attributes = this.valueAttr.split(","),
@@ -74,7 +76,7 @@
 
 			this.watchers = watchers[0];
 			
-			if(!this.watchers)
+			if(!this.watchers && !this.sorceEvent == 'none')
 			{
 				if(console.error)
 					console.error('this is the offensive reflector:', this)
@@ -83,20 +85,32 @@
 			
 			this.sources = sources;
 			
+			this._boundSetInteractionOccured = this._setInteractionOccured.bind(this);
+			if(this.hideMessageUntilInteraction)
+				this._hmuiChanged();
+				//sources.forEach(el => ['click','tap','keydown'].forEach(et => el.addEventListener(et, this._setInteractionOccured.bind(this))));
+		
 			// this.validate();
+		},
+		
+		_setInteractionOccured : function() {
+			this.set('_interactionOccured', true);
+			this._setShowInvalidMessage();
 		},
 		
 		forceValidate : function() {
 			this.allValidators.forEach(function(v) { return v(true) });
+			this.set("validationRequested", true);
+				
 			return this.isValid;
 		},
 		
 		validate: function(sources, dontFireEvent){
 			var watcher = this.watchers, res, re, p;
-			var e = dontFireEvent;
-			if(e instanceof Event)
-				dontFireEvent = false;
-
+			// var e = dontFireEvent;
+			// if(e instanceof Event)
+			//	dontFireEvent = false;
+			
 			if(!sources.filter(function(e) { return !e.disabled }).length) // if all elements are disabled there's a reason and we regard the element as valid
 			{
 				this.set("isValid", true);
@@ -135,6 +149,31 @@
 		
 			return this.isValid;
 		},
+		_isValidChanged : function() {
+			return 
+		},
+		_setShowInvalidMessage : function() {
+			return this.set("_showInvalidMessage", !this.isValid && (	
+																		this.validationRequested ||
+																		(
+																			(!this.hideMessageUntilInteraction || this._interactionOccured) && 
+																			!this.hideMessageUntilValidationRequested
+																		)
+																	));
+		},
+		
+		_hmuiChanged : function() {
+			if((!this.hideMessageUntilInteraction == !this.__hasHmuiListener) || !this.sources)
+				return;
+
+			const addOrRemove = this.hideMessageUntilInteraction ? "addEventListener" : "removeEventListener";
+			
+			(this.sources || []).forEach(el => INTERACTION_EVENT_TYPES.forEach(et => el[addOrRemove](et, this._boundSetInteractionOccured)))
+			
+			this.__hasHmuiListener = !this.__hasHmuiListener; // removes duplicity and skips redundant add/remove calls
+		},
+		
+		observers : ["_setShowInvalidMessage(isValid,validationRequested,_interactionOccured)"],
 
 		properties : {
 			value : {
@@ -150,8 +189,12 @@
 			changeEvent : { type : String, value : "change" },
 			pattern:{type:String},
 			target:{type:String},
-			isValid:{type:Boolean, value: true, notify: true}
-			//isValid:{type:Boolean, value: true, notify: true}
+			isValid:{type:Boolean, value: true, notify: true,observer:"_isValidChanged"},
+			validationRequested: { type : Boolean, value : false },
+			hideMessageUntilInteraction:{type:Boolean, value: false, observer : "_hmuiChanged" },
+			hideMessageUntilValidationRequested:{type:Boolean, value: false},
+			_showInvalidMessage: { type : Boolean, value : true },
+			_interactionOccured:{type:Boolean, value: false}
 		}
 	});
 })()
